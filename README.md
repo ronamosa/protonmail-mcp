@@ -36,6 +36,11 @@ The server requires the following environment variables to be set in the MCP set
 ### Claude Desktop Configuration
 Located at: `/Users/your-username/Library/Application Support/Claude/claude_desktop_config.json`
 
+### Claude Code Configuration
+Located at: `/Users/your-username/Library/Application Support/Claude/claude_code_config.json`
+
+Both Claude Desktop and Claude Code store their MCP settings as JSON files; after editing either file you must fully quit and relaunch the app for changes to take effect.
+
 ### Cline VSCode Extension Configuration
 Located at: `/Users/your-username/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
 
@@ -145,7 +150,22 @@ This MCP server can be installed in both Claude Desktop and Cline VSCode extensi
    npm run build
    ```
 
-3. Add the server configuration to your MCP settings files (see Configuration section above)
+3. Add the server configuration to your MCP settings files (see Configuration section above). For Claude Code, edit `claude_code_config.json` and include an entry similar to:
+   ```json
+   {
+     "mcpServers": {
+       "protonmail-mcp": {
+         "command": "/Users/you/Repos/protonmail-mcp/node_modules/.bin/protonmail-mcp",
+         "env": {
+           "PROTONMAIL_USERNAME": "you@proton.me",
+           "PROTONMAIL_PASSWORD": "smtp-password",
+           "PROTONMAIL_SECURE": "true"
+         }
+       }
+     }
+   }
+   ```
+   Adjust the command path and environment values to match your setup.
 
 ### Using Cline to Install from GitHub
 
