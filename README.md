@@ -12,7 +12,7 @@
   </a>
 </p>
 
-This MCP server provides email sending functionality using Protonmail's SMTP service. It allows both Claude Desktop and Cline VSCode extension to send emails on your behalf using your Protonmail credentials.
+This MCP server provides email sending functionality using Protonmail's SMTP service. It allows both Claude Desktop and Cline VSCode extension to send emails on your behalf using your Protonmail credentials. The implementation now includes basic safety rails (schema validation, allow lists, and per-minute rate limiting) along with a `health_check` tool for quick diagnostics.
 
 ## Compatibility
 
@@ -36,6 +36,39 @@ The server requires the following environment variables to be set in the MCP set
 ### Claude Desktop Configuration
 Located at: `/Users/your-username/Library/Application Support/Claude/claude_desktop_config.json`
 
+### Claude Code Configuration
+
+Claude Code stores MCP settings in your global Claude profile—either through the `claude` CLI or the `~/.claude.json` file. You can configure this server in either of the following ways:
+
+1. **CLI:**  
+   ```bash
+   claude mcp add --transport stdio protonmail \
+     /Users/your-username/Repos/protonmail-mcp/node_modules/.bin/protonmail-mcp \
+     --env PROTONMAIL_USERNAME=you@proton.me \
+     --env PROTONMAIL_PASSWORD=your-smtp-password
+   ```
+   You can add additional `--env` flags for the optional variables listed below.
+
+2. **Config file (`~/.claude.json`):**
+   ```json
+   {
+     "projects": {
+       "/path/to/your/project": {
+         "mcpServers": {
+           "protonmail-mcp": {
+             "command": "/Users/your-username/Repos/protonmail-mcp/node_modules/.bin/protonmail-mcp",
+             "env": {
+               "PROTONMAIL_USERNAME": "you@proton.me",
+               "PROTONMAIL_PASSWORD": "smtp-password"
+             }
+           }
+         }
+       }
+     }
+   }
+   ```
+   Replace the project path, command path, and env values with your own. Restart Claude Code after modifying the file.
+
 ### Cline VSCode Extension Configuration
 Located at: `/Users/your-username/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
 
@@ -46,13 +79,20 @@ Both configuration files require the following environment variables:
 - `PROTONMAIL_HOST`: SMTP server hostname (default: smtp.protonmail.ch)
 - `PROTONMAIL_PORT`: SMTP server port (default: 587 for STARTTLS, 465 for SSL/TLS)
 - `PROTONMAIL_SECURE`: Whether to use a secure connection (default: "false" for port 587, "true" for port 465)
+- `PROTONMAIL_REQUIRE_TLS`: Enforce STARTTLS (default: `true`)
+- `PROTONMAIL_TLS_MIN_VERSION`: Minimum TLS version (default: `TLSv1.2`; supported: `TLSv1`, `TLSv1.1`, `TLSv1.2`, `TLSv1.3`)
+- `PROTONMAIL_TLS_REJECT_UNAUTHORIZED`: Reject invalid SMTP certificates (default: `true`)
+- `PROTONMAIL_CONNECTION_TIMEOUT_MS`: Timeout for establishing SMTP connections (default: `10000`)
+- `PROTONMAIL_SOCKET_TIMEOUT_MS`: Timeout for SMTP socket activity (default: `10000`)
+- `PROTONMAIL_RATE_LIMIT_PER_MINUTE`: Maximum emails per minute (set `0` or negative to disable, default: `10`)
+- `PROTONMAIL_ALLOW_LIST`: Optional comma-separated list of recipient addresses allowed to receive email
 - `DEBUG`: Enable debug logging (set to "true" to see detailed logs, "false" to hide them)
 
 For detailed information about Protonmail's SMTP service, including how to get your SMTP password, please refer to the [official Protonmail SMTP documentation](https://proton.me/support/smtp-submission).
 
 ## Usage
 
-Once configured, you can use the MCP server to send emails with the following tool:
+Once configured, you can use the MCP server with the following tools:
 
 ### send_email
 
@@ -84,6 +124,18 @@ Sends an email using your Protonmail SMTP account.
 </use_mcp_tool>
 ```
 
+### health_check
+
+Returns a quick status report summarizing SMTP connectivity, rate-limit state, allow-list configuration, and the last send attempt. This is useful for verifying credentials without sending a message.
+
+```
+<use_mcp_tool>
+<server_name>protonmail-mcp</server_name>
+<tool_name>health_check</tool_name>
+<arguments>{}</arguments>
+</use_mcp_tool>
+```
+
 ## Troubleshooting
 
 If you encounter issues with the MCP server, check the following:
@@ -106,7 +158,7 @@ npm install
 npm run build
 ```
 
-To modify the server, edit the files in the `src` directory and rebuild the project.
+To modify the server, edit the files in the `src` directory and rebuild the project. The high-level plan for the current hardening work lives in `docs/SDD.md`.
 
 ## Installation
 
@@ -126,7 +178,7 @@ This MCP server can be installed in both Claude Desktop and Cline VSCode extensi
    npm run build
    ```
 
-3. Add the server configuration to your MCP settings files (see Configuration section above)
+3. Add the server configuration using either the Claude Code CLI/`~/.claude.json`, Claude Desktop config file, or the Cline settings file, depending on which client you are using (see Configuration section above).
 
 ### Using Cline to Install from GitHub
 
