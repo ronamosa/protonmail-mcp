@@ -1,4 +1,6 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
+import SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
+import type { SecureVersion } from "tls";
 
 /**
  * Interface for email configuration
@@ -12,6 +14,13 @@ export interface EmailConfig {
     pass: string;
   };
   debug?: boolean;
+  connectionTimeout?: number;
+  socketTimeout?: number;
+  requireTLS?: boolean;
+  tls?: {
+    minVersion?: SecureVersion;
+    rejectUnauthorized?: boolean;
+  };
 }
 
 /**
@@ -46,15 +55,25 @@ export class EmailService {
     }
     
     this.fromEmail = config.auth.user;
-    this.transporter = nodemailer.createTransport({
+
+    const transportOptions: SMTPTransport.Options = {
       host: config.host,
       port: config.port,
       secure: config.secure, // true for 465, false for other ports
+      requireTLS: config.requireTLS ?? config.secure,
+      connectionTimeout: config.connectionTimeout,
+      socketTimeout: config.socketTimeout,
       auth: {
         user: config.auth.user,
         pass: config.auth.pass,
       },
-    });
+      tls: {
+        minVersion: config.tls?.minVersion,
+        rejectUnauthorized: config.tls?.rejectUnauthorized,
+      },
+    };
+
+    this.transporter = nodemailer.createTransport(transportOptions);
   }
 
   /**
